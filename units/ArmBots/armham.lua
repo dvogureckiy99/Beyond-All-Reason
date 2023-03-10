@@ -116,8 +116,8 @@ return {
 			arm_ham = {
 				areaofeffect = 36,
 				avoidfeature = false,
-				craterareaofeffect = 0,
-				craterboost = 0,
+				craterareaofeffect = 18,
+				craterboost = 100,
 				cratermult = 0,
 				edgeeffectiveness = 0.15,
 				explosiongenerator = "custom:genericshellexplosion-small",
