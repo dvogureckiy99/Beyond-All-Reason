@@ -114,7 +114,7 @@ return {
 				beamttl = 1,
 				burstrate = 0.2,
 				corethickness = 0.1,
-				craterareaofeffect = 0,
+				craterareaofeffect = 4,
 				craterboost = 100,
 				cratermult = 0,
 				edgeeffectiveness = 0.15,
