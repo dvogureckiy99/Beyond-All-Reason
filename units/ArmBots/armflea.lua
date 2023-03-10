@@ -115,7 +115,7 @@ return {
 				burstrate = 0.2,
 				corethickness = 0.1,
 				craterareaofeffect = 0,
-				craterboost = 0,
+				craterboost = 100,
 				cratermult = 0,
 				edgeeffectiveness = 0.15,
 				energypershot = 2,
