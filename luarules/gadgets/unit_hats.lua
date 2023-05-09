@@ -60,20 +60,19 @@ local unitDefCanWearHats = {
 local vikings = {
 	["Raghna"] = true,
 	["Malady"] = true,
+	["captainjacksparrow"] = true,
+	["[DE]LSR"] = true,
 }
 local kings = {
-	["[teh]Teddy"] = true,
+	["MightySheep"] = true,
 }
 local goldMedals = {
-	--["[teh]Teddy"] = true,
 	["EmperorGlass"] = true,
 }
 local silverMedals = {
-	--["PRO_rANDY"] = true,
 	["[eVo]Lopatka"] = true,
 }
 local bronzeMedals = {
-	--["StarDom"] = true,
 	["MatBlader"] = true,
 	["[eVo]therxyy"] = true,
 }

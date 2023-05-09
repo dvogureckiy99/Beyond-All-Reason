@@ -52,7 +52,7 @@ local hoverCellZoom = 0.05 * zoomMult
 local clickSelectedCellZoom = 0.125 * zoomMult
 local selectedCellZoom = 0.135 * zoomMult
 
-local bgpadding, chobbyInterface, activeAreaMargin, iconTypesMap
+local bgpadding, activeAreaMargin, iconTypesMap
 local dlistGuishader, dlistBuildmenuBg, dlistBuildmenu, font2, cmdsCount
 local doUpdateClock, ordermenuHeight, advplayerlistPos, prevAdvplayerlistLeft
 local cellPadding, iconPadding, cornerSize, cellInnerSize, cellSize, priceFontSize
@@ -135,6 +135,7 @@ local pages = 1
 local paginatorRects = {}
 local preGamestartPlayer = Spring.GetGameFrame() == 0 and not isSpec
 local unitshapes = {}
+local mexSnapPosition
 
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -900,12 +901,6 @@ function drawBuildmenu()
 	font2:End()
 end
 
-function widget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 18) == 'LobbyOverlayActive' then
-		chobbyInterface = (msg:sub(1, 19) == 'LobbyOverlayActive1')
-	end
-end
-
 local function GetBuildingDimensions(uDefID, facing)
 	local bDef = UnitDefs[uDefID]
 	if (facing % 2 == 1) then
@@ -996,10 +991,6 @@ function widget:DrawScreen()
 	if (not cachedUnitIcons) and Spring.GetGameFrame() == 0 then
 		cachedUnitIcons = true
 		cacheUnitIcons()
-	end
-
-	if chobbyInterface then
-		return
 	end
 
 	-- refresh buildmenu if active cmd changed
@@ -1530,15 +1521,13 @@ function widget:MousePress(x, y, button)
 
 		if selBuildQueueDefID then
 			if button == 1 then
-				local curMexPosition = WG.MexSnap and WG.MexSnap.curPosition
-
-				if curMexPosition then
-					pos = { curMexPosition.x, curMexPosition.y, curMexPosition.z }
+				if mexSnapPosition then
+					pos = { mexSnapPosition.x, mexSnapPosition.y, mexSnapPosition.z }
 				end
-
 				if not pos then
 					return
 				end
+
 				local bx, by, bz = Spring.Pos2BuildPos(selBuildQueueDefID, pos[1], pos[2], pos[3])
 				local buildFacing = Spring.GetBuildFacing()
 				local buildData = { selBuildQueueDefID, bx, by, bz, buildFacing }
@@ -1824,6 +1813,19 @@ function widget:Initialize()
 	WG['buildmenu'].getIsShowing = function()
 		return buildmenuShows
 	end
+	WG['buildmenu'].getBuildQueue = function()
+		return buildQueue
+	end
+	WG['buildmenu'].setMexSnapPosition = function(value)
+		if value then
+			mexSnapPosition = value
+		else
+			mexSnapPosition = nil
+		end
+	end
+	widgetHandler:RegisterGlobal(widget, 'GetPreGameDefID', WG['buildmenu'].getPreGameDefID)
+	widgetHandler:RegisterGlobal(widget, 'GetBuildQueue', WG['buildmenu'].getBuildQueue)
+	widgetHandler:RegisterGlobal(widget, 'SetMexSnapPosition', WG['buildmenu'].setMexSnapPosition)
 end
 
 function widget:Shutdown()
@@ -1839,6 +1841,9 @@ function widget:Shutdown()
 			removeUnitShape(id)
 		end
 	end
+	widgetHandler:DeregisterGlobal(widget, 'GetPreGameDefID')
+	widgetHandler:DeregisterGlobal(widget, 'GetBuildQueue')
+	widgetHandler:DeregisterGlobal(widget, 'SetMexSnapPosition')
 end
 
 function widget:GetConfigData()

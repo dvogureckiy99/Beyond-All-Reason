@@ -419,6 +419,7 @@ function UnitDef_Post(name, uDef)
 		elseif name == "coravp" then
 			local numBuildoptions = #uDef.buildoptions
 			uDef.buildoptions[numBuildoptions+1] = "corgatreap"
+			uDef.buildoptions[numBuildoptions+2] = "corforge"
 		elseif name == "armca" or name == "armck" or name == "armcv" then
 			local numBuildoptions = #uDef.buildoptions
 			uDef.buildoptions[numBuildoptions+1] = "corscavdrag"
@@ -470,10 +471,12 @@ function UnitDef_Post(name, uDef)
 			uDef.buildoptions[numBuildoptions+2] = "armdecadet3"
 			uDef.buildoptions[numBuildoptions+3] = "armpshipt3"
 			uDef.buildoptions[numBuildoptions+4] = "armserpt3"
+			uDef.buildoptions[numBuildoptions+5] = "armcarry2"
 		elseif name == "corasy" then
 			local numBuildoptions = #uDef.buildoptions
 			uDef.buildoptions[numBuildoptions+1] = "corslrpc"
 			uDef.buildoptions[numBuildoptions+2] = "coresuppt3"
+			uDef.buildoptions[numBuildoptions+3] = "corcarry2"
 		end
 	end
 
@@ -544,6 +547,7 @@ function UnitDef_Post(name, uDef)
 	]]
 	if string.find(name, "chicken") and uDef.maxdamage then
 		local chickHealth = uDef.maxdamage
+		uDef.activatewhenbuilt = true
 		uDef.buildcostmetal = chickHealth*0.5
 		uDef.buildcostenergy = chickHealth*5
 		uDef.buildtime = chickHealth*10
@@ -1054,6 +1058,10 @@ function WeaponDef_Post(name, wDef)
 		-- wDef.targetborder = 1.0
 
 		if wDef.weapontype == "Cannon" then
+			if not wDef.model then -- do not cast shadows on plasma shells
+				wDef.castshadow = false
+			end
+
 			if wDef.stages == nil then
 				wDef.stages = 10
 				if wDef.damage ~= nil and wDef.damage.default ~= nil and wDef.areaofeffect ~= nil then

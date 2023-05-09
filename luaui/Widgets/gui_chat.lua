@@ -103,7 +103,7 @@ local cursorBlinkDuration = 1
 
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
 
-local anonymousTeamColor = {1,0,0}
+local anonymousTeamColor = {Spring.GetConfigInt("anonymousColorR", 255)/255, Spring.GetConfigInt("anonymousColorG", 0)/255, Spring.GetConfigInt("anonymousColorB", 0)/255}
 
 local inputMode = ''
 if isSpec then
@@ -1280,11 +1280,11 @@ function widget:DrawScreen()
 	end
 end
 
-local function runAutocompleteSet(wordsSet, searchStr, multi)
+local function runAutocompleteSet(wordsSet, searchStr, multi, lower)
 	autocompleteWords = {}
 	local charCount = slen(searchStr)
 	for i, word in ipairs(wordsSet) do
-		if searchStr == ssub(word, 1, charCount) and slen(word) > charCount then
+		if slen(word) > charCount  and (searchStr == ssub(word, 1, charCount) or (lower and searchStr:lower() == ssub(word:lower(), 1, charCount)))  then
 			autocompleteWords[#autocompleteWords+1] = word
 			if not autocompleteText then
 				autocompleteText = ssub(word, charCount+1)
@@ -1331,7 +1331,7 @@ local function autocomplete(text, fresh)
 
 	-- find autocompleteWords
 	if autocompleteWords[2] then
-		runAutocompleteSet(autocompleteWords, letters, allowMultiAutocomplete)
+		runAutocompleteSet(autocompleteWords, letters, allowMultiAutocomplete, true)
 	else
 		if #letters >= 2 then
 			runAutocompleteSet(autocompletePlayernames, letters)
@@ -1345,7 +1345,7 @@ local function autocomplete(text, fresh)
 				end
 			else
 				if #letters >= 2 then
-					runAutocompleteSet(autocompleteUnitNames, letters, allowMultiAutocomplete)
+					runAutocompleteSet(autocompleteUnitNames, letters, allowMultiAutocomplete, true)
 				end
 			end
 		end

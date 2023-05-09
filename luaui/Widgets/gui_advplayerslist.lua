@@ -80,8 +80,6 @@ local Spring_SendCommands = Spring.SendCommands
 local Spring_GetMouseState = Spring.GetMouseState
 local Spring_GetAIInfo = Spring.GetAIInfo
 local Spring_GetTeamRulesParam = Spring.GetTeamRulesParam
-local Spring_IsGUIHidden = Spring.IsGUIHidden
-local Spring_GetDrawFrame = Spring.GetDrawFrame
 local Spring_GetMyTeamID = Spring.GetMyTeamID
 local Spring_AreTeamsAllied = Spring.AreTeamsAllied
 
@@ -156,7 +154,7 @@ local originalColourNames = {} -- loaded in SetOriginalColourNames, format is or
 local apiAbsPosition = { 0, 0, 0, 0, 1, 1, false }
 
 local anonymousMode = Spring.GetModOptions().teamcolors_anonymous_mode
-local anonymousTeamColor = {1,0,0}
+local anonymousTeamColor = {Spring.GetConfigInt("anonymousColorR", 255)/255, Spring.GetConfigInt("anonymousColorG", 0)/255, Spring.GetConfigInt("anonymousColorB", 0)/255}
 
 --------------------------------------------------------------------------------
 -- Colors
@@ -199,7 +197,7 @@ local aliveAllyTeams = {}
 local allyTeamMaxStorage = {}
 local screenshotVars = {} -- containing: finished, width, height, gameframe, data, dataLast, dlist, pixels, player, filename, saved, saveQueued, posX, posY
 
-local Background, ShareSlider, chobbyInterface, BackgroundGuishader, tipText, drawTipText, tipY, myLastCameraState
+local Background, ShareSlider, BackgroundGuishader, tipText, drawTipText, tipY, myLastCameraState
 local specJoinedOnce, scheduledSpecFullView
 local prevClickedPlayer
 local lockPlayerID, leftPosX, lastSliderSound, release
@@ -1698,19 +1696,7 @@ end
 --  Draw control
 ---------------------------------------------------------------------------------------------------
 
-function widget:RecvLuaMsg(msg, playerID)
-    if msg:sub(1, 18) == 'LobbyOverlayActive' then
-        chobbyInterface = (msg:sub(1, 19) == 'LobbyOverlayActive1')
-    end
-end
-
 function widget:DrawScreen()
-    if chobbyInterface then
-        return
-    end
-    if Spring_IsGUIHidden() then
-        return
-    end
     local mouseX, mouseY, mouseButtonL, mmb, rmb, mouseOffScreen, cameraPanMode = Spring.GetMouseState()
     --if cameraPanMode then
     --    if BackgroundGuishader then
@@ -2310,13 +2296,15 @@ function DrawResources(energy, energyStorage, metal, metalStorage, posY, dead, m
     local paddingLeft = 2
     local paddingRight = 2
     local barWidth = m_resources.width - paddingLeft - paddingRight
-    local y1Offset = 7
-    local y2Offset = 5
-    if dead then
-        y1Offset = 7.4
-        y2Offset = 6
+    local y1Offset
+    local y2Offset
+    if not dead then
+        y1Offset = 11
+        y2Offset = 9
+    else
+        y1Offset = 10
+        y2Offset = 8.6
     end
-
     local maxStorage = (maxAllyTeamMetalStorage and maxAllyTeamMetalStorage or metalStorage)
     gl_Color(1, 1, 1, 0.18)
     gl_Texture(pics["resbarBgPic"])
@@ -2336,12 +2324,12 @@ function DrawResources(energy, energyStorage, metal, metalStorage, posY, dead, m
         DrawRect(m_resources.posX + widgetPosX + paddingLeft + ((barWidth / maxStorage) * metal) + (glowsize * 1.8), posY + y1Offset + glowsize, m_resources.posX + widgetPosX + paddingLeft + ((barWidth / maxStorage) * metal), posY + y2Offset - glowsize)
     end
 
-    if not dead then
-        y1Offset = 11
-        y2Offset = 9
+    if dead then
+        y1Offset = 7.4
+        y2Offset = 6
     else
-        y1Offset = 10
-        y2Offset = 8.6
+       y1Offset = 7
+       y2Offset = 5
     end
     maxStorage = (maxAllyTeamEnergyStorage and maxAllyTeamEnergyStorage or energyStorage)
     gl_Color(1, 1, 0, 0.18)
@@ -2381,10 +2369,10 @@ function DrawIncome(energy, metal, posY, dead)
     local fontsize = dead and 4.5 or 8.5
     font:Begin()
     if energy > 0 then
-        font:Print('\255\255\255\050'..formatRes(math.floor(energy)), m_income.posX + widgetPosX + m_income.width - 2, posY + (fontsize*1.15) + (dead and 1 or 0), fontsize, "or")
+        font:Print('\255\255\255\050'..formatRes(math.floor(energy)), m_income.posX + widgetPosX + m_income.width - 2, posY + (fontsize*0.2) + (dead and 1 or 0), fontsize, "or")
     end
     if metal > 0 then
-        font:Print('\255\235\235\235'..formatRes(math.floor(metal)), m_income.posX + widgetPosX + m_income.width - 2, posY + (fontsize*0.2) + (dead and 1 or 0), fontsize, "or")
+        font:Print('\255\235\235\235'..formatRes(math.floor(metal)), m_income.posX + widgetPosX + m_income.width - 2, posY + (fontsize*1.15) + (dead and 1 or 0), fontsize, "or")
     end
     font:End()
 end
@@ -2588,7 +2576,7 @@ function DrawName(name, team, posY, dark, playerID)
         font2:Print( nameText, m_name.posX + widgetPosX + 3 + xPadding, posY + 4, 14, "n")
     end
 
-    if player[playerID] and player[playerID].incomeMultiplier and player[playerID].incomeMultiplier > 1 then
+    if player[playerID] and not player[playerID].dead and player[playerID].incomeMultiplier and player[playerID].incomeMultiplier > 1 then
         font2:SetTextColor(0.5,1,0.5,1)
         font2:Print('+'..math.floor((player[playerID].incomeMultiplier-1)*100)..'%', m_name.posX + widgetPosX + 5 + xPadding + (font2:GetTextWidth(nameText)*14), posY + 5.7 , 8, "o")
     end
@@ -2614,7 +2602,6 @@ function DrawSmallName(name, team, posY, dark, playerID, alpha)
     local ignored = WG.ignoredPlayers and WG.ignoredPlayers[name]
 
     local textindent = 4
-    local explayerindent = -3
     if m_indent.active or m_rank.active or m_side.active or m_ID.active then
         textindent = 0
     end
@@ -2812,7 +2799,7 @@ function ResourcesTip(mouseX, energy, energyStorage, energyIncome, metal, metalS
         if metalIncome >= 10000 then
             metalIncome = Spring.I18N('ui.playersList.thousands', { number = math.floor(metalIncome / 1000) })
         end
-        tipText = "\255\255\255\000+" .. energyIncome .. "\n\255\255\255\000" .. energy .. "\n\255\255\255\255" .. metal .. "\n\255\255\255\255+" .. metalIncome
+        tipText = "\255\255\255\255+" .. metalIncome.. "\n\255\255\255\255" .. metal .. "\n\255\255\255\000" .. energy .. "\n\255\255\255\000+" .. energyIncome
     end
 end
 

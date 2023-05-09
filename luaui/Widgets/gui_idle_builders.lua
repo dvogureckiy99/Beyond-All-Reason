@@ -74,7 +74,7 @@ local nearIdle = 0 -- this means that factories with only X build items left wil
 local qCount = {}
 local idleList = {}
 
-local font, font2, chobbyInterface, buildmenuBottomPosition, dlist, dlistGuishader, backgroundRect, ordermenuPosY
+local font, font2, buildmenuBottomPosition, dlist, dlistGuishader, backgroundRect, ordermenuPosY
 
 local isBuilder = {}
 local isFactory = {}
@@ -144,6 +144,7 @@ local function checkGuishader(force)
 end
 
 local function drawIcon(unitDefID, rect, lightness, zoom, texSize, highlightOpacity)
+	--Spring.Debug.TraceFullEcho()
 	gl.Color(lightness,lightness,lightness,1)
 	UiUnit(
 		rect[1], rect[2], rect[3], rect[4],
@@ -392,7 +393,7 @@ local function checkUnitGroupsPos(isViewresize)
 		end
 	end
 end
-
+local checkgroups = false
 function widget:ViewResize()
 	vsx, vsy = Spring.GetViewGeometry()
 	height = setHeight * uiScale
@@ -439,9 +440,9 @@ function widget:ViewResize()
 			posY = 0
 		end
 	end
-
-	checkUnitGroupsPos(true)
-
+	if checkgroups then  -- this is the worlds stupides workaround for not creating display lists in intialize or update with unitpics too early, especially seen in save games and scenarios.
+		checkUnitGroupsPos(true)
+	end
 	iconMargin = floor((backgroundPadding * 0.5) + 0.5)
 	groupSize = floor((height * vsy) - (posY-height > 0 and backgroundPadding or 0))
 	usedHeight = groupSize + (posY-height > 0 and backgroundPadding or 0)
@@ -476,25 +477,15 @@ function widget:Shutdown()
 	WG['idlebuilders'] = nil
 end
 
-function widget:RecvLuaMsg(msg, playerID)
-	if msg:sub(1, 18) == 'LobbyOverlayActive' then
-		chobbyInterface = (msg:sub(1, 19) == 'LobbyOverlayActive1')
-	end
-end
 
-function widget:DrawScreen()
-	if chobbyInterface then
-		return
-	end
-	if (not spec or showWhenSpec) and dlist then
-		gl.CallList(dlist)
-	end
-end
 
 local sec = 0
 local sec2 = 0
 local doUpdate = true
-function widget:Update(dt)
+local timerStart = Spring.GetTimer()
+function Update()
+	if Spring.GetGameFrame() <1 then return end
+	checkgroups = true
 	if not (not spec or showWhenSpec) then
 		return
 	end
@@ -502,6 +493,9 @@ function widget:Update(dt)
 	if WG['topbar'] and WG['topbar'].showingQuit() then
 		return
 	end
+	local now = Spring.GetTimer()
+	local dt = Spring.DiffTimers(now, timerStart)
+	timerStart = now
 
 	doUpdate = false
 	sec = sec + dt
@@ -570,6 +564,13 @@ function widget:Update(dt)
 
 	if doUpdate then
 		updateList()
+	end
+end
+
+function widget:DrawScreen()
+	Update()
+	if (not spec or showWhenSpec) and dlist then
+		gl.CallList(dlist)
 	end
 end
 

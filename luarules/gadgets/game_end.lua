@@ -132,16 +132,21 @@ if gadgetHandler:IsSyncedCode() then
 		end
 		teamInfo.hasLeader = select(2, GetTeamInfo(teamID,false)) >= 0
 
-		if not teamInfo.hasLeader and not teamInfo.dead then
-			if not killTeamQueue[teamID] then
-				killTeamQueue[teamID] = gf + (30 * (isFFA and 180 or 10))	-- add a grace period before killing the team
+		if not isFFA or gf > (Game.gameSpeed * 60 * 1) then
+			if not teamInfo.hasLeader and not teamInfo.dead then
+				if not killTeamQueue[teamID] then
+					killTeamQueue[teamID] = gf + (Game.gameSpeed * (isFFA and 180 or 10))	-- add a grace period before killing the team
+				end
+			elseif killTeamQueue[teamID] then
+				killTeamQueue[teamID] = nil
 			end
-		elseif killTeamQueue[teamID] then
-			killTeamQueue[teamID] = nil
-		end
-		if killTeamQueue[teamID] and gf <= killTeamQueue[teamID] then
-			KillTeam(teamID)
-			killTeamQueue[teamID] = nil
+			if killTeamQueue[teamID] and gf >= killTeamQueue[teamID] then
+				if isFFA and gf < (Game.gameSpeed * 60 * 1) then
+					Spring.Echo('game_end: KillTeam teamID: '..teamID)
+				end
+				KillTeam(teamID)
+				killTeamQueue[teamID] = nil
+			end
 		end
 
 		-- if team isn't AI controlled, then we need to check if we have attached players
@@ -431,6 +436,9 @@ if gadgetHandler:IsSyncedCode() then
 				allyTeamInfos[allyTeamID] = allyTeamInfo
 				if allyTeamUnitCount <= allyTeamInfo.unitDecorationCount then
 					for teamID in pairs(allyTeamInfo.teams) do
+						if isFFA and Spring.GetGameFrame() < (Game.gameSpeed * 60 * 1) then
+							Spring.Echo('game_end: unit destroyed, KillTeam teamID: '..teamID)
+						end
 						KillTeam(teamID)
 						killTeamQueue[teamID] = nil
 					end
